@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>75 Hard Sticky Note Tracker</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      --card-bg: #ffffff;
+      --text-main: #2d3748;
+      --text-muted: #718096;
+      --accent-pink: #d53f8c;
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 30px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      max-width: 800px;
+      margin-bottom: 25px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #1a202c;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .top-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-pink);
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #edf2f7;
+      color: #4a5568;
+    }
+
+    .btn-danger {
+      background-color: #e53e3e;
+      color: white;
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* 75 Grid Layout */
+    .grid-section {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .sticky-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+
+    .sticky-note {
+      aspect-ratio: 1 / 1;
+      border-radius: 4px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.12);
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sticky-note:hover {
+      transform: scale(1.05) rotate(1deg);
+      z-index: 10;
+      box-shadow: 4px 8px 15px rgba(0, 0, 0, 0.18);
+    }
+
+    .note-number {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #2d3748;
+    }
+
+    .sticky-note.completed::after {
+      content: "✓";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      color: rgba(46, 133, 64, 0.8);
+      font-weight: bold;
+    }
+
+    /* Active Day To-Do Panel */
+    .todo-panel {
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .todo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #edf2f7;
+      padding-bottom: 10px;
+    }
+
+    .todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      background: #f7fafc;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .todo-item:hover {
+      background: #edf2f7;
+    }
+
+    .todo-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent-pink);
+      cursor: pointer;
+    }
+
+    .todo-item label {
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal h2 {
+      margin-bottom: 10px;
+    }
+
+    .modal textarea {
+      width: 100%;
+      height: 180px;
+      padding: 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      margin: 15px 0;
+      resize: vertical;
+    }
+
+    @media (max-width: 600px) {
+      .sticky-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+      }
+      .sticky-note {
+        padding: 4px;
+      }
+      .note-number {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>75 HARD TRACKER</h1>
+    <p class="subtitle">Complete all goals daily. Miss one item = Restart back to Day 1.</p>
+    <div class="top-controls">
+      <button class="btn-secondary" onclick="openGoalsModal()">Edit Custom Goals</button>
+      <button class="btn-danger" onclick="confirmReset()">Manual Restart</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Active Day To-Do Card -->
+    <div class="todo-panel">
+      <div class="todo-header">
+        <h2>Day <span id="current-day-num">1</span> Daily Checklist</h2>
+        <span id="completion-status" style="font-size:0.85rem; color:var(--text-muted)">0/0 Done</span>
+      </div>
+
+      <div class="todo-list" id="todo-list"></div>
+
+      <button class="btn-primary" style="width: 100%;" onclick="submitDay()">Complete Day</button>
+    </div>
+
+    <!-- 75 Sticky Notes Mirror Grid -->
+    <div class="grid-section">
+      <div class="sticky-grid" id="sticky-grid"></div>
+    </div>
+  </div>
+
+  <!-- Custom Goals Modal -->
+  <div class="modal-overlay" id="goals-modal">
+    <div class="modal">
+      <h2>Customize Your Daily Goals</h2>
+      <p style="font-size:0.85rem; color: var(--text-muted);">Enter one goal per line. These will appear on your daily checklist.</p>
+      <textarea id="goals-input"></textarea>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn-secondary" onclick="closeGoalsModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveGoals()">Save Goals</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default goals if none are saved
+    const defaultGoals = [
+      "Bible Study",
+      "Study",
+      "Vitamins",
+      "Stretch & Workout",
+      "Pray 3x a day",
+      "Content Creation",
+      "Spanish Practice",
+      "Read Book",
+      "Clean"
+    ];
+
+    let goals = JSON.parse(localStorage.getItem("75hard_goals")) || defaultGoals;
+    let currentDay = parseInt(localStorage.getItem("75hard_day")) || 1;
+    let checkedItems = JSON.parse(localStorage.getItem("75hard_checked")) || [];
+
+    // Interpolate color from light pink (Day 1) to deep pink/magenta (Day 75)
+    function getGradientColor(day) {
+      const startColor = { r: 252, g: 231, b: 235 }; // Soft light pink
+      const endColor = { r: 190, g: 24, b: 93 };      // Deep vibrant magenta
+      const factor = (day - 1) / 74;
+
+      const r = Math.round(startColor.r + factor * (endColor.r - startColor.r));
+      const g = Math.round(startColor.g + factor * (endColor.g - startColor.g));
+      const b = Math.round(startColor.b + factor * (endColor.b - startColor.b));
+
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById("sticky-grid");
+      grid.innerHTML = "";
+
+      for (let i = 1; i <= 75; i++) {
+        const note = document.createElement("div");
+        note.className = "sticky-note";
+        note.style.backgroundColor = getGradientColor(i);
+
+        if (i < currentDay) {
+          note.classList.add("completed");
+        } else if (i === currentDay) {
+          note.style.outline = "3px solid var(--accent-pink)";
+        }
+
+        note.innerHTML = `<span class="note-number">${i}</span>`;
+        grid.appendChild(note);
+      }
+    }
+
+    function renderTodoList() {
+      const listContainer = document.getElementById("todo-list");
+      document.getElementById("current-day-num").innerText = currentDay;
+      listContainer.innerHTML = "";
+
+      goals.forEach((goal, idx) => {
+        const isChecked = checkedItems.includes(idx);
+        const item = document.createElement("div");
+        item.className = "todo-item";
+        item.onclick = (e) => {
+          if (e.target.tagName !== "INPUT") {
+            toggleCheck(idx);
+          }
+        };
+
+        item.innerHTML = `
+          <input type="checkbox" id="goal-${idx}" ${isChecked ? "checked" : ""} onchange="toggleCheck(${idx})">
+          <label for="goal-${idx}">${goal}</label>
+        `;
+        listContainer.appendChild(item);
+      });
+
+      document.getElementById("completion-status").innerText = `${checkedItems.length}/${goals.length} Done`;
+    }
+
+    function toggleCheck(idx) {
+      if (checkedItems.includes(idx)) {
+        checkedItems = checkedItems.filter(i => i !== idx);
+      } else {
+        checkedItems.push(idx);
+      }
+      localStorage.setItem("75hard_checked", JSON.stringify(checkedItems));
+      renderTodoList();
+    }
+
+    function submitDay() {
+      if (checkedItems.length < goals.length) {
+        alert("⚠️ Rule Alert: You missed one or more goals today!\n\nAccording to 75 Hard rules, missing any goal resets your tracker back to Day 1.");
+        resetTracker();
+        return;
+      }
+
+      if (currentDay >= 75) {
+        alert("🎉 CONGRATULATIONS! You completed all 75 days!");
+        resetTracker();
+        return;
+      }
+
+      currentDay++;
+      checkedItems = [];
+      saveState();
+      renderGrid();
+      renderTodoList();
+    }
+
+    function resetTracker() {
+      currentDay = 1;
+      checkedItems = [];
+      saveState();
+      renderGrid();
+      renderTodoList();
+    }
+
+    function confirmReset() {
+      if (confirm("Are you sure you want to reset your progress back to Day 1?")) {
+        resetTracker();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem("75hard_day", currentDay);
+      localStorage.setItem("75hard_checked", JSON.stringify(checkedItems));
+      localStorage.setItem("75hard_goals", JSON.stringify(goals));
+    }
+
+    // Modal Handlers
+    function openGoalsModal() {
+      document.getElementById("goals-input").value = goals.join("\n");
+      document.getElementById("goals-modal").classList.add("active");
+    }
+
+    function closeGoalsModal() {
+      document.getElementById("goals-modal").classList.remove("active");
+    }
+
+    function saveGoals() {
+      const lines = document.getElementById("goals-input").value
+        .split("\n")
+        .map(g => g.trim())
+        .filter(g => g.length > 0);
+
+      if (lines.length === 0) {
+        alert("Please enter at least one goal.");
+        return;
+      }
+
+      goals = lines;
+      checkedItems = [];
+      saveState();
+      closeGoalsModal();
+      renderTodoList();
+    }
+
+    // Initialize on page load
+    renderGrid();
+    renderTodoList();
+  </script>
+</body>
+</html>
